@@ -1,0 +1,30 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+*.out
+
+vendor/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+Thumbs.db
+db.desktop
+Desktop.ini
+
+.env
+.env.local
+
+# Project specific
+examples/main
