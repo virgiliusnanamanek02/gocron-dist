@@ -13,9 +13,11 @@ import (
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/cluster"
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/hash"
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/scheduler"
+	"github.com/virgiliusnanamanek02/gocron-dist/internal/storage"
 )
 
 func main() {
+
 	// 1. Ambil konfigurasi dari flag
 	nodeName := flag.String("name", "", "Nama unik untuk node ini")
 	port := flag.Int("port", 7946, "Port untuk Gossip Protocol")
@@ -30,8 +32,19 @@ func main() {
 	ring := hash.NewConsistent()
 	ring.AddNode(*nodeName) // Masukkan diri sendiri ke ring
 
+	dbDir := fmt.Sprintf("data_%s", *nodeName)
+	store, _ := storage.NewStore(dbDir)
+	defer store.Close()
+
 	// 3. Inisialisasi Scheduler Engine
 	engine := scheduler.NewEngine()
+	engine.Storage = store
+
+	oldJobs, _ := store.GetAllJobs()
+	for _, j := range oldJobs {
+		engine.AddJob(j)
+		fmt.Printf("[Recovery] Loaded job %s from disk\n", j.ID)
+	}
 
 	// 4. Inisialisasi Cluster (Memberlist)
 	// Kita berikan callback: kalau ada node Join/Leave, update ring-nya!
@@ -64,7 +77,7 @@ func main() {
 		for {
 			counter++
 			jobID := fmt.Sprintf("job-%d", counter)
-			
+
 			// Cek kepemilikan
 			owner := ring.GetNode(jobID)
 			fmt.Printf("[Check] %s dimiliki oleh %s\n", jobID, owner)

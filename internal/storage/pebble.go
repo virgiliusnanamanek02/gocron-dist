@@ -12,7 +12,6 @@ type Store struct {
 }
 
 func NewStore(dir string) (*Store, error) {
-	// Membuka database di folder tertentu (sesuai nama node)
 	db, err := pebble.Open(dir, &pebble.Options{})
 	if err != nil {
 		return nil, err
@@ -21,19 +20,30 @@ func NewStore(dir string) (*Store, error) {
 }
 
 func (s *Store) SaveJob(j *scheduler.Job) error {
-	data, _ := json.Marshal(j)
+	data, err := json.Marshal(j)
+	if err != nil {
+		return err
+	}
 	return s.db.Set([]byte(j.ID), data, pebble.Sync)
 }
 
 func (s *Store) GetAllJobs() ([]*scheduler.Job, error) {
 	var jobs []*scheduler.Job
-	iter, _ := s.db.NewIter(nil)
+
+	iter, err := s.db.NewIter(nil)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+
 	for iter.First(); iter.Valid(); iter.Next() {
 		var j scheduler.Job
-		json.Unmarshal(iter.Value(), &j)
+		if err := json.Unmarshal(iter.Value(), &j); err != nil {
+			continue // atau return err kalau mau strict
+		}
 		jobs = append(jobs, &j)
 	}
-	iter.Close()
+
 	return jobs, nil
 }
 

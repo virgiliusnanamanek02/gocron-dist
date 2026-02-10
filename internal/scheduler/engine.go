@@ -8,10 +8,17 @@ import (
 	"time"
 )
 
+type Storer interface {
+	SaveJob(j *Job) error
+	GetAllJobs() ([]*Job, error)
+	Close() error
+}
+
 type Engine struct {
 	queue      JobQueue
 	mu         sync.Mutex
 	newJobChan chan struct{}
+	Storage    Storer
 }
 
 func NewEngine() *Engine {
@@ -26,6 +33,11 @@ func NewEngine() *Engine {
 // AddJob memasukkan job baru ke heap dan mentrigger evaluasi ulang timer
 func (e *Engine) AddJob(j *Job) {
 	e.mu.Lock()
+
+	if e.Storage != nil {
+		e.Storage.SaveJob(j)
+	}
+
 	heap.Push(&e.queue, j)
 	e.mu.Unlock()
 
