@@ -44,38 +44,12 @@ func main() {
 	engine := scheduler.NewEngine()
 	engine.Storage = store
 
-	server := &api.Server{
-		Engine:   engine,
-		Ring:     ring,
-		NodeName: *nodeName,
-	}
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-
-	grpcServer := grpc.NewServer()
-	api.RegisterSchedulerServiceServer(grpcServer, server)
-
-	fmt.Printf("[gRPC] Server jalan di port %d\n", *grpcPort)
-	go func() {
-		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve gRPC: %v", err)
-		}
-	}()
-
-	oldJobs, _ := store.GetAllJobs()
-	for _, j := range oldJobs {
-		engine.AddJob(j)
-		fmt.Printf("[Recovery] Loaded job %s from disk\n", j.ID)
-	}
-
 	// 4. Inisialisasi Cluster (Memberlist)
 	// Kita berikan callback: kalau ada node Join/Leave, update ring-nya!
-	_, err = cluster.NewCluster(
+	c, err := cluster.NewCluster(
 		*nodeName,
 		*port,
+		*grpcPort,
 		*joinAddr,
 		func(name string) {
 			fmt.Printf("\n[Cluster] Node %s bergabung.\n", name)
@@ -88,6 +62,35 @@ func main() {
 	)
 	if err != nil {
 		log.Fatalf("Gagal membuat cluster: %v", err)
+	}
+
+	server := &api.Server{
+		Engine:   engine,
+		Ring:     ring,
+		NodeName: *nodeName,
+		Cluster:  c,
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	api.RegisterSchedulerServiceServer(grpcServer, server)
+
+	// Start gRPC server
+	fmt.Printf("[gRPC] Server jalan di port %d\n", *grpcPort)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
+
+	oldJobs, _ := store.GetAllJobs()
+	for _, j := range oldJobs {
+		engine.AddJob(j)
+		fmt.Printf("[Recovery] Loaded job %s from disk\n", j.ID)
 	}
 
 	// 5. Jalankan Engine di Goroutine

@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/cockroachdb/pebble v1.1.5
 	github.com/hashicorp/memberlist v0.5.4
-	google.golang.org/grpc v1.56.3
+	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 )
 
