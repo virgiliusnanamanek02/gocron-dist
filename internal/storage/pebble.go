@@ -47,6 +47,24 @@ func (s *Store) GetAllJobs() ([]*scheduler.Job, error) {
 	return jobs, nil
 }
 
+func (s *Store) GetJob(id string) (*scheduler.Job, error) {
+	val, closer, err := s.db.Get([]byte(id))
+	if err != nil {
+		return nil, err
+	}
+	defer closer.Close()
+
+	var j scheduler.Job
+	if err := json.Unmarshal(val, &j); err != nil {
+		return nil, err
+	}
+	return &j, nil
+}
+
+func (s *Store) DeleteJob(id string) error {
+	return s.db.Delete([]byte(id), pebble.Sync)
+}
+
 func (s *Store) Close() error {
 	return s.db.Close()
 }

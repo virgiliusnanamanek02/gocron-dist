@@ -10,7 +10,9 @@ import (
 
 type Storer interface {
 	SaveJob(j *Job) error
+	GetJob(id string) (*Job, error)
 	GetAllJobs() ([]*Job, error)
+	DeleteJob(id string) error
 	Close() error
 }
 
@@ -97,4 +99,13 @@ func (e *Engine) execute(j *Job) {
 	fmt.Printf("[%s] Executing job: %s\n", time.Now().Format("15:04:05"), j.Payload)
 	// Simulasi kerja
 	time.Sleep(100 * time.Millisecond)
+
+	// Hapus job dari storage agar tidak dieksekusi ulang saat restart
+	if e.Storage != nil {
+		if err := e.Storage.DeleteJob(j.ID); err != nil {
+			fmt.Printf("[Error] Failed to delete job %s: %v\n", j.ID, err)
+		} else {
+			fmt.Printf("[Storage] Job %s deleted from disk\n", j.ID)
+		}
+	}
 }
