@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,11 +15,14 @@ import (
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/hash"
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/scheduler"
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/storage"
+	"github.com/virgiliusnanamanek02/gocron-dist/pkg/api"
+	"google.golang.org/grpc"
 )
 
 func main() {
 
 	// 1. Ambil konfigurasi dari flag
+	grpcPort := flag.Int("grpc-port", 50051, "Port untuk gRPC API")
 	nodeName := flag.String("name", "", "Nama unik untuk node ini")
 	port := flag.Int("port", 7946, "Port untuk Gossip Protocol")
 	joinAddr := flag.String("join", "", "Alamat node lain untuk bergabung ke cluster (opsional)")
@@ -40,6 +44,27 @@ func main() {
 	engine := scheduler.NewEngine()
 	engine.Storage = store
 
+	server := &api.Server{
+		Engine:   engine,
+		Ring:     ring,
+		NodeName: *nodeName,
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	api.RegisterSchedulerServiceServer(grpcServer, server)
+
+	fmt.Printf("[gRPC] Server jalan di port %d\n", *grpcPort)
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
+
 	oldJobs, _ := store.GetAllJobs()
 	for _, j := range oldJobs {
 		engine.AddJob(j)
@@ -48,7 +73,7 @@ func main() {
 
 	// 4. Inisialisasi Cluster (Memberlist)
 	// Kita berikan callback: kalau ada node Join/Leave, update ring-nya!
-	_, err := cluster.NewCluster(
+	_, err = cluster.NewCluster(
 		*nodeName,
 		*port,
 		*joinAddr,
