@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package api;
+
+// Menentukan lokasi output file Go
+option go_package = "github.com/virgiliusnanamanek02/gocron-dist/pkg/api";
+
+import "google/protobuf/timestamp.proto";
+
+// Service untuk mengelola jadwal pekerjaan di cluster
+service SchedulerService {
+  // Method untuk mendaftarkan job baru
+  rpc AddJob (AddJobRequest) returns (AddJobResponse);
+}
+
+message AddJobRequest {
+  string id = 1;
+  string payload = 2;
+  // Kita gunakan timestamp standar dari protobuf
+  google.protobuf.Timestamp schedule_time = 3;
+}
+
+message AddJobResponse {
+  bool success = 1;
+  string message = 2;
+  string assigned_node = 3; // Memberitahu node mana yang akhirnya memegang job ini
+}
