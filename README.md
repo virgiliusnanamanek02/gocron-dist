@@ -31,17 +31,24 @@ go get github.com/virgiliusnanamanek02/gocron-dist
 
 ```bash
 # Start the first node
-go run cmd/server/main.go -port 8001 -grpc-port 9001 -node node-1
+go run cmd/server/main.go -port 8001 -grpc-port 9001 -name node-1
 
 # Start a second node and join the cluster
-go run cmd/server/main.go -port 8002 -grpc-port 9002 -node node-2 -join localhost:8001
+go run cmd/server/main.go -port 8002 -grpc-port 9002 -name node-2 -join localhost:8001
 ```
 
 ### Scheduling a Job (Client)
 
 ```bash
-go run cmd/client/main.go -server localhost:9001 -id "job-1" -schedule "2023-12-01T10:00:00Z" -payload "Send Email"
+go run cmd/client/main.go -target localhost:9001 -id "job-1" -delay 5 -msg "Send Email"
 ```
+
+## Examples
+
+We provide several examples to help you get started:
+
+- **[Basic Usage](examples/basic/main.go)**: Learn how to use the core scheduler engine in a simple, non-distributed setup.
+- **[Distributed Setup](examples/distributed/main.go)**: See how to initialize a distributed node programmatically.
 
 ## Contributing
 
