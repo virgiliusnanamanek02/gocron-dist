@@ -7,8 +7,8 @@ import (
 )
 
 type Consistent struct {
-	nodes   []uint32          // Menyimpan hash dari setiap node yang terurut
-	nodeMap map[uint32]string // Map dari hash ke nama asli node (misal: "node-1")
+	nodes   []uint32          // Stores sorted hash of each node
+	nodeMap map[uint32]string // Map from hash to original node name (e.g., "node-1")
 	mu      sync.RWMutex
 }
 
@@ -18,7 +18,7 @@ func NewConsistent() *Consistent {
 	}
 }
 
-// AddNode memasukkan node baru ke dalam ring
+// AddNode adds a new node to the ring
 func (c *Consistent) AddNode(nodeName string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -29,7 +29,7 @@ func (c *Consistent) AddNode(nodeName string) {
 	sort.Slice(c.nodes, func(i, j int) bool { return c.nodes[i] < c.nodes[j] })
 }
 
-// GetNode mencari node mana yang bertanggung jawab atas sebuah ID (Job ID)
+// GetNode finds which node is responsible for a given ID (Job ID)
 func (c *Consistent) GetNode(key string) string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -40,12 +40,12 @@ func (c *Consistent) GetNode(key string) string {
 
 	hash := crc32.ChecksumIEEE([]byte(key))
 
-	// Mencari node pertama yang hash-nya >= hash key
+	// Find the first node whose hash is >= key hash
 	idx := sort.Search(len(c.nodes), func(i int) bool {
 		return c.nodes[i] >= hash
 	})
 
-	// Jika tidak ketemu yang lebih besar, putar balik ke node pertama (circular)
+	// If no larger node found, wrap around to the first node (circular)
 	if idx == len(c.nodes) {
 		idx = 0
 	}

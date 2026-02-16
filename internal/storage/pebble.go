@@ -39,7 +39,7 @@ func (s *Store) GetAllJobs() ([]*scheduler.Job, error) {
 	for iter.First(); iter.Valid(); iter.Next() {
 		var j scheduler.Job
 		if err := json.Unmarshal(iter.Value(), &j); err != nil {
-			continue // atau return err kalau mau strict
+			continue // or return err if you want to be strict
 		}
 		jobs = append(jobs, &j)
 	}

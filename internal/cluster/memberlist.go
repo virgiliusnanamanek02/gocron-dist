@@ -48,7 +48,7 @@ func NewCluster(nodeName string, port int, grpcPort int, joinAddr string, onJoin
 	config.BindPort = port
 	config.AdvertisePort = port
 
-	// Agar log tidak terlalu berisik di terminal
+	// To prevent logs from being too noisy in the terminal
 	config.LogOutput = io.Discard
 
 	// Setup delegates

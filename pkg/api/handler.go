@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/cluster"
 	"github.com/virgiliusnanamanek02/gocron-dist/internal/hash"
@@ -20,20 +21,20 @@ type Server struct {
 }
 
 func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobResponse, error) {
-	// 1. Tentukan siapa pemilik job berdasarkan ID-nya
+	// 1. Determine who owns the job based on its ID
 	owner := s.Ring.GetNode(req.Id)
 
-	// 2. Jika pemiliknya bukan node ini, forward request!
+	// 2. If the owner is not this node, forward the request!
 	if owner != s.NodeName {
-		// Cari alamat gRPC node pemilik
+		// Find the gRPC address of the owner node
 		addr, err := s.Cluster.GetNodeGrpcAddress(owner)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve owner %s: %v", owner, err)
 		}
 
-		fmt.Printf("[Forward] Forwarding job %s to %s (%s)\n", req.Id, owner, addr)
+		log.Printf("[Forward] Forwarding job %s to %s (%s)\n", req.Id, owner, addr)
 
-		// Dial ke node pemilik
+		// Dial the owner node
 		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to owner %s: %v", owner, err)
@@ -44,7 +45,7 @@ func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobRespons
 		return client.AddJob(ctx, req)
 	}
 
-	// 3. Jika milik sendiri, masukkan ke Engine
+	// 3. If it belongs to this node, add it to the Engine
 	s.Engine.AddJob(&scheduler.Job{
 		ID:      req.Id,
 		Payload: req.Payload,
@@ -53,7 +54,7 @@ func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobRespons
 
 	return &AddJobResponse{
 		Success:      true,
-		Message:      "Job berhasil dijadwalkan secara lokal",
+		Message:      "Job scheduled successfully locally",
 		AssignedNode: s.NodeName,
 	}, nil
 }

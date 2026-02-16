@@ -2,15 +2,15 @@ package scheduler
 
 import "time"
 
-// Job representasi tugas yang akan dieksekusi
+// Job represents a task to be executed
 type Job struct {
 	ID       string
 	Payload  string
-	CronExpr string    // Misal: "*/5 * * * *"
-	NextRun  time.Time // Kapan job ini harus jalan selanjutnya
+	CronExpr string    // Example: "*/5 * * * *"
+	NextRun  time.Time // When this job should run next
 }
 
-// PriorityQueue akan mengimplementasikan heap.Interface
+// PriorityQueue implements heap.Interface
 type JobQueue []*Job
 
 func (jq JobQueue) Len() int           { return len(jq) }

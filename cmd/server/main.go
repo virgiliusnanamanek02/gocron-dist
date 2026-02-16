@@ -21,47 +21,47 @@ import (
 
 func main() {
 
-	// 1. Ambil konfigurasi dari flag
-	grpcPort := flag.Int("grpc-port", 50051, "Port untuk gRPC API")
-	nodeName := flag.String("name", "", "Nama unik untuk node ini")
-	port := flag.Int("port", 7946, "Port untuk Gossip Protocol")
-	joinAddr := flag.String("join", "", "Alamat node lain untuk bergabung ke cluster (opsional)")
+	// 1. Get configuration from flags
+	grpcPort := flag.Int("grpc-port", 50051, "Port for gRPC API")
+	nodeName := flag.String("name", "", "Unique name for this node")
+	port := flag.Int("port", 7946, "Port for Gossip Protocol")
+	joinAddr := flag.String("join", "", "Address of another node to join the cluster (optional)")
 	flag.Parse()
 
 	if *nodeName == "" {
-		log.Fatal("Nama node harus diisi! Contoh: -name=node-1")
+		log.Fatal("Node name is required! Example: -name=node-1")
 	}
 
-	// 2. Inisialisasi Consistent Hashing
+	// 2. Initialize Consistent Hashing
 	ring := hash.NewConsistent()
-	ring.AddNode(*nodeName) // Masukkan diri sendiri ke ring
+	ring.AddNode(*nodeName) // Add self to the ring
 
 	dbDir := fmt.Sprintf("data_%s", *nodeName)
 	store, _ := storage.NewStore(dbDir)
 	defer store.Close()
 
-	// 3. Inisialisasi Scheduler Engine
+	// 3. Initialize Scheduler Engine
 	engine := scheduler.NewEngine()
 	engine.Storage = store
 
-	// 4. Inisialisasi Cluster (Memberlist)
-	// Kita berikan callback: kalau ada node Join/Leave, update ring-nya!
+	// 4. Initialize Cluster (Memberlist)
+	// We provide callbacks: if a node Joins/Leaves, update the ring!
 	c, err := cluster.NewCluster(
 		*nodeName,
 		*port,
 		*grpcPort,
 		*joinAddr,
 		func(name string) {
-			fmt.Printf("\n[Cluster] Node %s bergabung.\n", name)
+			fmt.Printf("\n[Cluster] Node %s joined.\n", name)
 			ring.AddNode(name)
 		},
 		func(name string) {
-			fmt.Printf("\n[Cluster] Node %s keluar.\n", name)
-			// (Opsional) Implementasikan ring.RemoveNode jika diperlukan
+			fmt.Printf("\n[Cluster] Node %s left.\n", name)
+			// (Optional) Implement ring.RemoveNode if needed
 		},
 	)
 	if err != nil {
-		log.Fatalf("Gagal membuat cluster: %v", err)
+		log.Fatalf("Failed to create cluster: %v", err)
 	}
 
 	server := &api.Server{
@@ -80,7 +80,7 @@ func main() {
 	api.RegisterSchedulerServiceServer(grpcServer, server)
 
 	// Start gRPC server
-	fmt.Printf("[gRPC] Server jalan di port %d\n", *grpcPort)
+	fmt.Printf("[gRPC] Server running on port %d\n", *grpcPort)
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve gRPC: %v", err)
@@ -93,27 +93,27 @@ func main() {
 		fmt.Printf("[Recovery] Loaded job %s from disk\n", j.ID)
 	}
 
-	// 5. Jalankan Engine di Goroutine
+	// 5. Run Engine in Goroutine
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go engine.Run(ctx)
 
-	// 6. Simulasi: Tambah job setiap 10 detik
-	// Di sini "Magic" terjadi: Engine hanya akan eksekusi jika ring.GetNode(jobID) == nodeName
+	// 6. Simulation: Add job every 10 seconds
+	// Here "Magic" happens: Engine only executes if ring.GetNode(jobID) == nodeName
 	go func() {
 		counter := 0
 		for {
 			counter++
 			jobID := fmt.Sprintf("job-%d", counter)
 
-			// Cek kepemilikan
+			// Check ownership
 			owner := ring.GetNode(jobID)
-			fmt.Printf("[Check] %s dimiliki oleh %s\n", jobID, owner)
+			fmt.Printf("[Check] %s owned by %s\n", jobID, owner)
 
 			if owner == *nodeName {
 				engine.AddJob(&scheduler.Job{
 					ID:      jobID,
-					Payload: fmt.Sprintf("Data untuk %s", jobID),
+					Payload: fmt.Sprintf("Data for %s", jobID),
 					NextRun: time.Now().Add(5 * time.Second),
 				})
 			}
@@ -121,7 +121,7 @@ func main() {
 		}
 	}()
 
-	// Tunggu sinyal stop (Ctrl+C)
+	// Wait for stop signal (Ctrl+C)
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig

@@ -3,7 +3,7 @@ package scheduler
 import (
 	"container/heap"
 	"context"
-	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -32,7 +32,7 @@ func NewEngine() *Engine {
 	return e
 }
 
-// AddJob memasukkan job baru ke heap dan mentrigger evaluasi ulang timer
+// AddJob adds a new job to the heap and triggers a timer re-evaluation
 func (e *Engine) AddJob(j *Job) {
 	e.mu.Lock()
 
@@ -43,7 +43,7 @@ func (e *Engine) AddJob(j *Job) {
 	heap.Push(&e.queue, j)
 	e.mu.Unlock()
 
-	// Beritahu engine ada job baru (mungkin NextRun-nya lebih awal dari yang sekarang ditunggu)
+	// Notify engine of new job (NextRun might be earlier than currently waited)
 	select {
 	case e.newJobChan <- struct{}{}:
 	default:
@@ -51,18 +51,18 @@ func (e *Engine) AddJob(j *Job) {
 }
 
 func (e *Engine) Run(ctx context.Context) {
-	fmt.Println("Scheduler Engine started...")
+	log.Println("Scheduler Engine started...")
 
 	for {
 		e.mu.Lock()
-		var nextRun time.Duration = 1 * time.Hour // Default wait jika queue kosong
+		var nextRun time.Duration = 1 * time.Hour // Default wait if queue is empty
 
 		if e.queue.Len() > 0 {
 			now := time.Now()
 			nextJob := e.queue[0]
 
 			if now.After(nextJob.NextRun) || now.Equal(nextJob.NextRun) {
-				// Waktunya eksekusi!
+				// Time to execute!
 				job := heap.Pop(&e.queue).(*Job)
 				e.mu.Unlock()
 
@@ -80,32 +80,32 @@ func (e *Engine) Run(ctx context.Context) {
 			timer.Stop()
 			return
 		case <-timer.C:
-			// Timer habis, waktunya loop lagi untuk eksekusi job teratas
+			// Timer expired, loop again to execute top job
 		case <-e.newJobChan:
-			// Ada job baru masuk, reset timer untuk cek apakah job baru ini lebih urgen
+			// New job received, reset timer to check if this new job is more urgent
 			timer.Stop()
 		}
 	}
 }
 
 func (e *Engine) execute(j *Job) {
-	// Di level senior, eksekusi harus aman dari panic
+	// Execution must be safe from panics
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("[Recover] Job %s failed: %v\n", j.ID, r)
+			log.Printf("[Recover] Job %s failed: %v\n", j.ID, r)
 		}
 	}()
 
-	fmt.Printf("[%s] Executing job: %s\n", time.Now().Format("15:04:05"), j.Payload)
-	// Simulasi kerja
+	log.Printf("[%s] Executing job: %s\n", time.Now().Format("15:04:05"), j.Payload)
+	// Simulate work
 	time.Sleep(100 * time.Millisecond)
 
-	// Hapus job dari storage agar tidak dieksekusi ulang saat restart
+	// Delete job from storage to prevent re-execution on restart
 	if e.Storage != nil {
 		if err := e.Storage.DeleteJob(j.ID); err != nil {
-			fmt.Printf("[Error] Failed to delete job %s: %v\n", j.ID, err)
+			log.Printf("[Error] Failed to delete job %s: %v\n", j.ID, err)
 		} else {
-			fmt.Printf("[Storage] Job %s deleted from disk\n", j.ID)
+			log.Printf("[Storage] Job %s deleted from disk\n", j.ID)
 		}
 	}
 }
