@@ -52,7 +52,11 @@ We provide several examples to help you get started:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a history of changes.
 
 ## License
 
