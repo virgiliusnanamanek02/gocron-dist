@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	// 1. Connect to gRPC server
-	conn, err := grpc.Dial(*target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(*target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
