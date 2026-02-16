@@ -37,7 +37,9 @@ func (e *Engine) AddJob(j *Job) {
 	e.mu.Lock()
 
 	if e.Storage != nil {
-		e.Storage.SaveJob(j)
+		if err := e.Storage.SaveJob(j); err != nil {
+			log.Printf("[Error] Failed to save job %s at runtime: %v\n", j.ID, err)
+		}
 	}
 
 	heap.Push(&e.queue, j)

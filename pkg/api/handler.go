@@ -35,7 +35,7 @@ func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobRespons
 		log.Printf("[Forward] Forwarding job %s to %s (%s)\n", req.Id, owner, addr)
 
 		// Dial the owner node
-		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to owner %s: %v", owner, err)
 		}
