@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-20
+
+### Added
+- **Recurring Job Support**: native task rescheduling using `RepeatInterval` and `MaxRuns` for persistent periodic execution.
+- **Cluster Rebalancing**: automated "best-effort" job re-assignment when nodes leave the cluster via Gossip protocol updates.
+- **Full-Path Observability**: integrated OpenTelemetry (OTel) instrumentation across the critical path (gRPC -> Hash Ring -> Storage -> Execution).
+- **Dynamic Node Management**: added `RemoveNode` capability to the Consistent Hashing ring for better cluster elasticity.
+
+### Changed
+- **Context-Aware Storage**: refactored `PebbleDB` implementation and `Storer` interface to support context propagation for distributed tracing.
+- **Engine Refactor**: optimized scheduler engine loop to handle immediate re-enqueueing of recurring tasks.
+
 ## [0.1.1] - 2026-02-16
 
 ### Added

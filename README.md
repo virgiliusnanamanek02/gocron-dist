@@ -5,9 +5,11 @@
 ## Features
 
 - **Distributed Architecture**: Runs on multiple nodes; if one node fails, the cluster continues to function.
+- **Recurring Tasks**: Support for periodic jobs with configurable intervals and execution limits.
 - **Persistence**: Jobs are saved to disk using [PebbleDB](https://github.com/cockroachdb/pebble), ensuring no data loss during restarts.
 - **Clustering**: Uses [Memberlist](https://github.com/hashicorp/memberlist) (Gossip protocol) for node discovery and failure detection.
-- **Horizontal Scaling**: Jobs are distributed across nodes using **Consistent Hashing**.
+- **Horizontal Scaling**: Jobs are distributed across nodes using **Consistent Hashing** with automatic rebalancing.
+- **Observability**: Built-in distributed tracing using OpenTelemetry (OTel).
 - **gRPC API**: Submit and manage jobs programmatically via gRPC.
 
 ## Architecture
