@@ -51,7 +51,11 @@ func TestTelemetrySpans(t *testing.T) {
 		)),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			t.Errorf("Error shutting down tracer provider: %v", err)
+		}
+	}()
 
 	// Setup Engine and Ring (which have spans)
 	engine := scheduler.NewEngine()
@@ -86,7 +90,9 @@ func TestTelemetrySpans(t *testing.T) {
 	parentSpan.End()
 
 	// Flush spans
-	tp.ForceFlush(context.Background())
+	if err := tp.ForceFlush(context.Background()); err != nil {
+		t.Errorf("Error flushing spans: %v", err)
+	}
 
 	// Wait a bit for batcher
 	time.Sleep(100 * time.Millisecond)
