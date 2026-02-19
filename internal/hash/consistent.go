@@ -1,10 +1,17 @@
 package hash
 
 import (
+	"context"
 	"hash/crc32"
 	"sort"
 	"sync"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	go_trace "go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("consistent-hash")
 
 type Consistent struct {
 	nodes   []uint32          // Stores sorted hash of each node
@@ -24,13 +31,46 @@ func (c *Consistent) AddNode(nodeName string) {
 	defer c.mu.Unlock()
 
 	hash := crc32.ChecksumIEEE([]byte(nodeName))
+	if _, exists := c.nodeMap[hash]; exists {
+		return
+	}
 	c.nodes = append(c.nodes, hash)
 	c.nodeMap[hash] = nodeName
 	sort.Slice(c.nodes, func(i, j int) bool { return c.nodes[i] < c.nodes[j] })
 }
 
+// RemoveNode removes a node from the ring
+func (c *Consistent) RemoveNode(nodeName string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	hash := crc32.ChecksumIEEE([]byte(nodeName))
+	if _, exists := c.nodeMap[hash]; !exists {
+		return
+	}
+
+	delete(c.nodeMap, hash)
+
+	// Remove from sorted nodes
+	for i, v := range c.nodes {
+		if v == hash {
+			c.nodes = append(c.nodes[:i], c.nodes[i+1:]...)
+			break
+		}
+	}
+}
+
 // GetNode finds which node is responsible for a given ID (Job ID)
 func (c *Consistent) GetNode(key string) string {
+	return c.GetNodeWithContext(context.Background(), key)
+}
+
+func (c *Consistent) GetNodeWithContext(ctx context.Context, key string) string {
+	_, span := tracer.Start(ctx, "GetNode", go_trace.WithAttributes(
+		attribute.String("lookup_key", key),
+	))
+	defer span.End()
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -50,5 +90,7 @@ func (c *Consistent) GetNode(key string) string {
 		idx = 0
 	}
 
-	return c.nodeMap[c.nodes[idx]]
+	owner := c.nodeMap[c.nodes[idx]]
+	span.SetAttributes(attribute.String("owner", owner))
+	return owner
 }

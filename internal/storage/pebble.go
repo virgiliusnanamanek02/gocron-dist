@@ -1,11 +1,17 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	go_trace "go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("storage-pebble")
 
 type Store struct {
 	db *pebble.DB
@@ -20,6 +26,15 @@ func NewStore(dir string) (*Store, error) {
 }
 
 func (s *Store) SaveJob(j *scheduler.Job) error {
+	return s.SaveJobWithContext(context.Background(), j)
+}
+
+func (s *Store) SaveJobWithContext(ctx context.Context, j *scheduler.Job) error {
+	_, span := tracer.Start(ctx, "SaveJob", go_trace.WithAttributes(
+		attribute.String("job_id", j.ID),
+	))
+	defer span.End()
+
 	data, err := json.Marshal(j)
 	if err != nil {
 		return err
@@ -62,6 +77,15 @@ func (s *Store) GetJob(id string) (*scheduler.Job, error) {
 }
 
 func (s *Store) DeleteJob(id string) error {
+	return s.DeleteJobWithContext(context.Background(), id)
+}
+
+func (s *Store) DeleteJobWithContext(ctx context.Context, id string) error {
+	_, span := tracer.Start(ctx, "DeleteJob", go_trace.WithAttributes(
+		attribute.String("job_id", id),
+	))
+	defer span.End()
+
 	return s.db.Delete([]byte(id), pebble.Sync)
 }
 
