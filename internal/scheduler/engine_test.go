@@ -23,6 +23,10 @@ func (m *MockStore) SaveJob(j *scheduler.Job) error {
 	return nil
 }
 
+func (m *MockStore) SaveJobWithContext(ctx context.Context, j *scheduler.Job) error {
+	return m.SaveJob(j)
+}
+
 func (m *MockStore) GetJob(id string) (*scheduler.Job, error) {
 	return m.jobs[id], nil
 }
@@ -38,6 +42,10 @@ func (m *MockStore) GetAllJobs() ([]*scheduler.Job, error) {
 func (m *MockStore) DeleteJob(id string) error {
 	delete(m.jobs, id)
 	return nil
+}
+
+func (m *MockStore) DeleteJobWithContext(ctx context.Context, id string) error {
+	return m.DeleteJob(id)
 }
 
 func (m *MockStore) Close() error {

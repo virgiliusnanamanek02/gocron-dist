@@ -4,10 +4,13 @@ import "time"
 
 // Job represents a task to be executed
 type Job struct {
-	ID       string
-	Payload  string
-	CronExpr string    // Example: "*/5 * * * *"
-	NextRun  time.Time // When this job should run next
+	ID             string
+	Payload        string
+	CronExpr       string        // Example: "*/5 * * * *"
+	NextRun        time.Time     // When this job should run next
+	RepeatInterval time.Duration // Interval for recurring jobs
+	MaxRuns        int           // Maximum number of runs (0 = unlimited)
+	RunCount       int           // Number of times the job has been executed
 }
 
 // PriorityQueue implements heap.Interface
