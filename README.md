@@ -105,6 +105,18 @@ We provide several examples to help you get started:
 - **[Basic Usage](examples/basic/main.go)**: Learn how to use the core scheduler engine in a simple, non-distributed setup.
 - **[Distributed Setup](examples/distributed/main.go)**: See how to initialize a distributed node programmatically.
 
+## Known Limitations & Trade-offs
+
+- **Split-Brain Behavior**: In the event of a network partition, multiple nodes might believe they own the same job if they cannot see each other via the Gossip protocol. This can lead to duplicate executions.
+- **Job Loss Risk**: There is a small window between receiving a job via gRPC and persisting it to PebbleDB where a node failure could lead to job loss.
+- **At-Least-Once Delivery**: The system guarantees at-least-once delivery. In some failure scenarios (like network timeouts during deletion), a job might be executed more than once.
+- **Node Failure Recovery**: Job re-assignment only works for jobs already known to surviving nodes. If a node fails and its local PebbleDB is inaccessible, the jobs it owned cannot be re-assigned until the node or its storage is recovered.
+- **Best-Effort Rebalancing**: Re-assignment on node membership changes is best-effort and depends on the successful forwarding of jobs via gRPC.
+
+## Internal Process
+
+We are excited to embrace human-AI collaboration in the development of this project. **Gocron-Dist** leverages the assistance of **Gemini AI** to automate internal documentation and change tracking (*dev logs*), which significantly accelerates our iteration cycles and ensures that technical transparency is maintained to a high standard.
+
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
