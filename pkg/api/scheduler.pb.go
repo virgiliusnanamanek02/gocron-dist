@@ -27,9 +27,11 @@ type AddJobRequest struct {
 	Id      string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Payload string                 `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
 	// Kita gunakan timestamp standar dari protobuf
-	ScheduleTime  *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=schedule_time,json=scheduleTime,proto3" json:"schedule_time,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ScheduleTime        *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=schedule_time,json=scheduleTime,proto3" json:"schedule_time,omitempty"`
+	RepeatIntervalNanos int64                  `protobuf:"varint,4,opt,name=repeat_interval_nanos,json=repeatIntervalNanos,proto3" json:"repeat_interval_nanos,omitempty"`
+	MaxRuns             int32                  `protobuf:"varint,5,opt,name=max_runs,json=maxRuns,proto3" json:"max_runs,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *AddJobRequest) Reset() {
@@ -81,6 +83,20 @@ func (x *AddJobRequest) GetScheduleTime() *timestamppb.Timestamp {
 		return x.ScheduleTime
 	}
 	return nil
+}
+
+func (x *AddJobRequest) GetRepeatIntervalNanos() int64 {
+	if x != nil {
+		return x.RepeatIntervalNanos
+	}
+	return 0
+}
+
+func (x *AddJobRequest) GetMaxRuns() int32 {
+	if x != nil {
+		return x.MaxRuns
+	}
+	return 0
 }
 
 type AddJobResponse struct {
@@ -147,17 +163,19 @@ var File_pkg_api_scheduler_proto protoreflect.FileDescriptor
 
 const file_pkg_api_scheduler_proto_rawDesc = "" +
 	"\n" +
-	"\x17pkg/api/scheduler.proto\x12\x03api\x1a\x1fgoogle/protobuf/timestamp.proto\"z\n" +
+	"\x17pkg/api/scheduler.proto\x12\x03api\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc9\x01\n" +
 	"\rAddJobRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\apayload\x18\x02 \x01(\tR\apayload\x12?\n" +
-	"\rschedule_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\fscheduleTime\"i\n" +
+	"\rschedule_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\fscheduleTime\x122\n" +
+	"\x15repeat_interval_nanos\x18\x04 \x01(\x03R\x13repeatIntervalNanos\x12\x19\n" +
+	"\bmax_runs\x18\x05 \x01(\x05R\amaxRuns\"i\n" +
 	"\x0eAddJobResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12#\n" +
 	"\rassigned_node\x18\x03 \x01(\tR\fassignedNode2E\n" +
 	"\x10SchedulerService\x121\n" +
-	"\x06AddJob\x12\x12.api.AddJobRequest\x1a\x13.api.AddJobResponseB5Z3github.com/vnmchuo/gocron-dist/pkg/apib\x06proto3"
+	"\x06AddJob\x12\x12.api.AddJobRequest\x1a\x13.api.AddJobResponseB(Z&github.com/vnmchuo/gocron-dist/pkg/apib\x06proto3"
 
 var (
 	file_pkg_api_scheduler_proto_rawDescOnce sync.Once

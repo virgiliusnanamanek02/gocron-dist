@@ -18,6 +18,8 @@ message AddJobRequest {
   string payload = 2;
   // Kita gunakan timestamp standar dari protobuf
   google.protobuf.Timestamp schedule_time = 3;
+  int64 repeat_interval_nanos = 4;
+  int32 max_runs = 5;
 }
 
 message AddJobResponse {
