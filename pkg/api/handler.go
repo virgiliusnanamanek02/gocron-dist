@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/cluster"
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/hash"
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/scheduler"
+	"github.com/vnmchuo/gocron-dist/internal/cluster"
+	"github.com/vnmchuo/gocron-dist/internal/hash"
+	"github.com/vnmchuo/gocron-dist/internal/scheduler"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

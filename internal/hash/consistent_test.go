@@ -3,7 +3,7 @@ package hash_test
 import (
 	"testing"
 
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/hash"
+	"github.com/vnmchuo/gocron-dist/internal/hash"
 )
 
 func TestConsistent_AddNode(t *testing.T) {

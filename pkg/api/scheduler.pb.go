@@ -157,7 +157,7 @@ const file_pkg_api_scheduler_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12#\n" +
 	"\rassigned_node\x18\x03 \x01(\tR\fassignedNode2E\n" +
 	"\x10SchedulerService\x121\n" +
-	"\x06AddJob\x12\x12.api.AddJobRequest\x1a\x13.api.AddJobResponseB5Z3github.com/virgiliusnanamanek02/gocron-dist/pkg/apib\x06proto3"
+	"\x06AddJob\x12\x12.api.AddJobRequest\x1a\x13.api.AddJobResponseB5Z3github.com/vnmchuo/gocron-dist/pkg/apib\x06proto3"
 
 var (
 	file_pkg_api_scheduler_proto_rawDescOnce sync.Once

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/scheduler"
+	"github.com/vnmchuo/gocron-dist/internal/scheduler"
 )
 
 type MockStore struct {

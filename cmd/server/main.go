@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/cluster"
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/hash"
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/scheduler"
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/storage"
-	"github.com/virgiliusnanamanek02/gocron-dist/pkg/api"
+	"github.com/vnmchuo/gocron-dist/internal/cluster"
+	"github.com/vnmchuo/gocron-dist/internal/hash"
+	"github.com/vnmchuo/gocron-dist/internal/scheduler"
+	"github.com/vnmchuo/gocron-dist/internal/storage"
+	"github.com/vnmchuo/gocron-dist/pkg/api"
 	"google.golang.org/grpc"
 )
 

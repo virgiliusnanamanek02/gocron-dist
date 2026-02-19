@@ -6,7 +6,7 @@ First off, thank you for considering contributing to **gocron-dist**! It's peopl
 
 ### Reporting Bugs
 
-- Use the [GitHub Issue Tracker](https://github.com/virgiliusnanamanek02/gocron-dist/issues).
+- Use the [GitHub Issue Tracker](https://github.com/vnmchuo/gocron-dist/issues).
 - Describe the bug and include steps to reproduce.
 - Mention your Go version and OS.
 

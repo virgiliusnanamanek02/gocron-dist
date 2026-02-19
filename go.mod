@@ -1,4 +1,4 @@
-module github.com/virgiliusnanamanek02/gocron-dist
+module github.com/vnmchuo/gocron-dist
 
 go 1.24.0
 

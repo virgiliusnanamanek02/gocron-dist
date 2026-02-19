@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/virgiliusnanamanek02/gocron-dist/internal/scheduler"
+	"github.com/vnmchuo/gocron-dist/internal/scheduler"
 )
 
 type Store struct {

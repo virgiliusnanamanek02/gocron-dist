@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/virgiliusnanamanek02/gocron-dist/pkg/api"
+	"github.com/vnmchuo/gocron-dist/pkg/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"

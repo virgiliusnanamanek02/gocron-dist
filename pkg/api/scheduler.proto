@@ -3,7 +3,7 @@ syntax = "proto3";
 package api;
 
 // Menentukan lokasi output file Go
-option go_package = "github.com/virgiliusnanamanek02/gocron-dist/pkg/api";
+option go_package = "github.com/vnmchuo/gocron-dist/pkg/api";
 
 import "google/protobuf/timestamp.proto";
 
