@@ -77,7 +77,7 @@ flowchart LR
 ## Installation
 
 ```bash
-go get github.com/virgiliusnanamanek02/gocron-dist
+go get github.com/vnmchuo/gocron-dist
 ```
 
 ## Usage
