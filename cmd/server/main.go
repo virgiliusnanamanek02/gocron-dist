@@ -15,6 +15,7 @@ import (
 	"github.com/vnmchuo/gocron-dist/internal/hash"
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
 	"github.com/vnmchuo/gocron-dist/internal/storage"
+	"github.com/vnmchuo/gocron-dist/internal/telemetry"
 	"github.com/vnmchuo/gocron-dist/pkg/api"
 	"google.golang.org/grpc"
 )
@@ -32,6 +33,13 @@ func main() {
 		log.Fatal("Node name is required! Example: -name=node-1")
 	}
 
+	// Initialize Telemetry
+	tp, err := telemetry.InitTracer(*nodeName)
+	if err != nil {
+		log.Fatalf("Failed to initialize tracer: %v", err)
+	}
+	defer telemetry.ShutdownTracer(context.Background(), tp)
+
 	// 2. Initialize Consistent Hashing
 	ring := hash.NewConsistent()
 	ring.AddNode(*nodeName) // Add self to the ring
@@ -43,9 +51,16 @@ func main() {
 	// 3. Initialize Scheduler Engine
 	engine := scheduler.NewEngine()
 	engine.Storage = store
+	engine.NodeName = *nodeName
+	engine.Ring = ring
 
 	// 4. Initialize Cluster (Memberlist)
 	// We provide callbacks: if a node Joins/Leaves, update the ring!
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var server *api.Server
+
 	c, err := cluster.NewCluster(
 		*nodeName,
 		*port,
@@ -57,14 +72,19 @@ func main() {
 		},
 		func(name string) {
 			fmt.Printf("\n[Cluster] Node %s left.\n", name)
-			// (Optional) Implement ring.RemoveNode if needed
+			ring.RemoveNode(name)
+			// Trigger rebalance when someone leaves
+			if server != nil {
+				go engine.Rebalance(ctx, server)
+			}
 		},
 	)
 	if err != nil {
 		log.Fatalf("Failed to create cluster: %v", err)
 	}
+	engine.Cluster = c
 
-	server := &api.Server{
+	server = &api.Server{
 		Engine:   engine,
 		Ring:     ring,
 		NodeName: *nodeName,
@@ -94,7 +114,7 @@ func main() {
 	}
 
 	// 5. Run Engine in Goroutine
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	go engine.Run(ctx)
 

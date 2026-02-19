@@ -4,13 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/vnmchuo/gocron-dist/internal/cluster"
 	"github.com/vnmchuo/gocron-dist/internal/hash"
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var tracer = otel.Tracer("api-handler")
 
 type Server struct {
 	UnimplementedSchedulerServiceServer
@@ -21,11 +28,17 @@ type Server struct {
 }
 
 func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobResponse, error) {
+	ctx, span := tracer.Start(ctx, "AddJob", trace.WithAttributes(
+		attribute.String("job_id", req.Id),
+		attribute.String("node_name", s.NodeName),
+	))
+	defer span.End()
+
 	// 1. Determine who owns the job based on its ID
-	owner := s.Ring.GetNode(req.Id)
+	owner := s.Ring.GetNodeWithContext(ctx, req.Id)
 
 	// 2. If the owner is not this node, forward the request!
-	if owner != s.NodeName {
+	if owner != s.NodeName && owner != "" {
 		// Find the gRPC address of the owner node
 		addr, err := s.Cluster.GetNodeGrpcAddress(owner)
 		if err != nil {
@@ -47,9 +60,11 @@ func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobRespons
 
 	// 3. If it belongs to this node, add it to the Engine
 	s.Engine.AddJob(&scheduler.Job{
-		ID:      req.Id,
-		Payload: req.Payload,
-		NextRun: req.ScheduleTime.AsTime(),
+		ID:             req.Id,
+		Payload:        req.Payload,
+		NextRun:        req.ScheduleTime.AsTime(),
+		RepeatInterval: time.Duration(req.RepeatIntervalNanos),
+		MaxRuns:        int(req.MaxRuns),
 	})
 
 	return &AddJobResponse{
@@ -57,4 +72,16 @@ func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobRespons
 		Message:      "Job scheduled successfully locally",
 		AssignedNode: s.NodeName,
 	}, nil
+}
+
+func (s *Server) ForwardJob(ctx context.Context, j *scheduler.Job) error {
+	req := &AddJobRequest{
+		Id:                  j.ID,
+		Payload:             j.Payload,
+		ScheduleTime:        timestamppb.New(j.NextRun),
+		RepeatIntervalNanos: int64(j.RepeatInterval),
+		MaxRuns:             int32(j.MaxRuns),
+	}
+	_, err := s.AddJob(ctx, req)
+	return err
 }
