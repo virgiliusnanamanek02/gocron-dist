@@ -19,6 +19,61 @@ The system consists of several key components:
 - **Hash Ring**: Determines which node is responsible for a specific job ID.
 - **Storage**: Persistent storage layer for jobs.
 
+### Workflow Diagram
+
+```mermaid
+flowchart LR
+    Client["🧑‍💻 Client (cmd/client)"]
+
+    Client -- "AddJob Request" --> gRPC
+
+    subgraph Cluster["☁️ Gocron-Dist Cluster"]
+        direction TB
+
+        subgraph NodeA["📦 Node A - Receiving Node"]
+            gRPC["gRPC API (pkg/api)"]
+            Ring["Hash Ring (internal/hash)"]
+            gRPC -- "1. GetNode(jobID)" --> Ring
+            Ring -- "2. Owner = ?" --> Decision{"Owner == this node?"}
+        end
+
+        subgraph NodeB["📦 Node B - Owner Node"]
+            gRPC_B["gRPC API"]
+            Engine_B["⚙️ Scheduler Engine"]
+            PQ_B["Priority Queue (Min-Heap)"]
+            DB_B[("🗄️ PebbleDB")]
+            Exec_B["🚀 Execute Job"]
+
+            gRPC_B -- "4. AddJob()" --> Engine_B
+            Engine_B -- "5. SaveJob()" --> DB_B
+            Engine_B -- "6. heap.Push()" --> PQ_B
+            PQ_B -- "7. NextRun ≤ now?" --> Exec_B
+            Exec_B -- "8. DeleteJob()" --> DB_B
+        end
+
+        Decision -- "Yes ✅ (Local)" --> Engine_B
+        Decision -- "No ❌ (Forward via gRPC)" --> gRPC_B
+
+        Memberlist["🔗 Memberlist (Gossip Protocol)"]
+        Memberlist -. "Node Join/Leave updates Hash Ring" .-> Ring
+    end
+
+    Exec_B -- "9. Response" --> Client
+```
+
+### How It Works
+
+| Step | Component | Description |
+|------|-----------|-------------|
+| 1 | Hash Ring | `GetNode(jobID)` determines the owner node via CRC32 Consistent Hashing |
+| 2-3 | Decision | If the owner is not this node, the request is **forwarded** via gRPC |
+| 4 | Engine | The owner node's `AddJob()` receives the job |
+| 5 | PebbleDB | Job is **persisted** to disk to survive restarts |
+| 6 | Priority Queue | Job is pushed onto a min-heap sorted by `NextRun` time |
+| 7 | Scheduler Loop | Engine continuously checks: when `NextRun ≤ now`, the job is popped |
+| 8 | Cleanup | After execution, the job is **deleted** from PebbleDB |
+| bg | Memberlist | Gossip protocol keeps the Hash Ring updated as nodes join/leave |
+
 ## Installation
 
 ```bash
