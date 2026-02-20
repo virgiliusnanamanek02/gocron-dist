@@ -9,7 +9,6 @@ import (
 	"github.com/vnmchuo/gocron-dist/internal/cluster"
 	"github.com/vnmchuo/gocron-dist/internal/hash"
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -17,18 +16,17 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var tracer = otel.Tracer("api-handler")
-
 type Server struct {
 	UnimplementedSchedulerServiceServer
 	Engine   *scheduler.Engine
 	Ring     *hash.Consistent
 	Cluster  *cluster.Cluster
 	NodeName string
+	Tracer   trace.Tracer
 }
 
 func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobResponse, error) {
-	ctx, span := tracer.Start(ctx, "AddJob", trace.WithAttributes(
+	ctx, span := s.Tracer.Start(ctx, "AddJob", trace.WithAttributes(
 		attribute.String("job_id", req.Id),
 		attribute.String("node_name", s.NodeName),
 	))
@@ -55,7 +53,12 @@ func (s *Server) AddJob(ctx context.Context, req *AddJobRequest) (*AddJobRespons
 		defer conn.Close()
 
 		client := NewSchedulerServiceClient(conn)
-		return client.AddJob(ctx, req)
+		
+		// Set a timeout for the forwarding call
+		fwdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		
+		return client.AddJob(fwdCtx, req)
 	}
 
 	// 3. If it belongs to this node, add it to the Engine

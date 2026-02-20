@@ -57,8 +57,10 @@ func TestTelemetrySpans(t *testing.T) {
 		}
 	}()
 
+	tracer := tp.Tracer("test")
+
 	// Setup Engine and Ring (which have spans)
-	engine := scheduler.NewEngine()
+	engine := scheduler.NewEngine(tracer)
 	engine.NodeName = "node-1"
 	ring := hash.NewConsistent()
 	ring.AddNode("node-1")
@@ -70,7 +72,7 @@ func TestTelemetrySpans(t *testing.T) {
 	jobID := "test-job-123"
 	
 	// Start a parent span to see nesting
-	ctx, parentSpan := otel.Tracer("test").Start(ctx, "ParentSpan")
+	ctx, parentSpan := tracer.Start(ctx, "ParentSpan")
 	
 	// GetNode (hash ring lookup)
 	_ = ring.GetNodeWithContext(ctx, jobID)

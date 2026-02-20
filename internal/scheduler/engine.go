@@ -8,12 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	go_trace "go.opentelemetry.io/otel/trace"
 )
-
-var tracer = otel.Tracer("scheduler-engine")
 
 type Storer interface {
 	SaveJob(j *Job) error
@@ -33,6 +31,7 @@ type Engine struct {
 	NodeName   string
 	Ring       Router
 	Cluster    Manager
+	Tracer     trace.Tracer
 }
 
 type Router interface {
@@ -48,10 +47,11 @@ type Forwarder interface {
 	ForwardJob(ctx context.Context, j *Job) error
 }
 
-func NewEngine() *Engine {
+func NewEngine(t trace.Tracer) *Engine {
 	e := &Engine{
 		queue:      make(JobQueue, 0),
 		newJobChan: make(chan struct{}, 1),
+		Tracer:     t,
 	}
 	heap.Init(&e.queue)
 	return e
@@ -79,8 +79,9 @@ func (e *Engine) Rebalance(ctx context.Context, f Forwarder) {
 			log.Printf("[Rebalance] Forwarding job %s to new owner %s\n", j.ID, owner)
 			go func(job *Job) {
 				if err := f.ForwardJob(ctx, job); err != nil {
-					log.Printf("[Error] Failed to forward rebalanced job %s: %v\n", job.ID, err)
-					// (Optional) Re-add to queue or handle loss
+					log.Printf("[Error] Failed to forward rebalanced job %s: %v. Re-queuing locally.\n", job.ID, err)
+					// Fallback: re-queue locally to prevent job loss on forward failure
+					e.AddJobWithContext(ctx, job)
 				} else {
 					// Delete from local storage after successful forward
 					if e.Storage != nil {
@@ -104,7 +105,7 @@ func (e *Engine) AddJob(j *Job) {
 }
 
 func (e *Engine) AddJobWithContext(ctx context.Context, j *Job) {
-	ctx, span := tracer.Start(ctx, "AddJob", go_trace.WithAttributes(
+	ctx, span := e.Tracer.Start(ctx, "AddJob", go_trace.WithAttributes(
 		attribute.String("job_id", j.ID),
 		attribute.String("next_run", j.NextRun.String()),
 	))
@@ -167,7 +168,7 @@ func (e *Engine) Run(ctx context.Context) {
 }
 
 func (e *Engine) execute(j *Job) {
-	ctx, span := tracer.Start(context.Background(), "ExecuteJob", go_trace.WithAttributes(
+	ctx, span := e.Tracer.Start(context.Background(), "ExecuteJob", go_trace.WithAttributes(
 		attribute.String("job_id", j.ID),
 		attribute.String("payload", j.Payload),
 		attribute.Int("run_count", j.RunCount),

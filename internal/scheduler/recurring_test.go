@@ -5,7 +5,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/otel/trace/noop"
 )
+
+var recurringTestTracer = noop.NewTracerProvider().Tracer("test")
 
 type mockStorage struct {
 	mu   sync.Mutex
@@ -31,7 +35,7 @@ func (m *mockStorage) DeleteJobWithContext(ctx context.Context, id string) error
 func (m *mockStorage) Close() error                                             { return nil }
 
 func TestRecurringJob_MaxRuns(t *testing.T) {
-	engine := NewEngine()
+	engine := NewEngine(recurringTestTracer)
 	storage := &mockStorage{jobs: make(map[string]*Job)}
 	engine.Storage = storage
 
@@ -75,7 +79,7 @@ func TestRecurringJob_MaxRuns(t *testing.T) {
 }
 
 func TestRecurringJob_Unlimited(t *testing.T) {
-	engine := NewEngine()
+	engine := NewEngine(recurringTestTracer)
 	storage := &mockStorage{jobs: make(map[string]*Job)}
 	engine.Storage = storage
 
@@ -120,7 +124,7 @@ func TestRecurringJob_Unlimited(t *testing.T) {
 }
 
 func TestOneShotJob(t *testing.T) {
-	engine := NewEngine()
+	engine := NewEngine(recurringTestTracer)
 	storage := &mockStorage{jobs: make(map[string]*Job)}
 	engine.Storage = storage
 
@@ -157,7 +161,7 @@ func TestOneShotJob(t *testing.T) {
 }
 
 func TestRecurringJob_NextRunUpdate(t *testing.T) {
-	engine := NewEngine()
+	engine := NewEngine(recurringTestTracer)
 	
 	interval := 500 * time.Millisecond
 	job := &Job{
@@ -201,7 +205,7 @@ func TestRecurringJob_NextRunUpdate(t *testing.T) {
 }
 
 func TestConcurrentRecurringJobs(t *testing.T) {
-	engine := NewEngine()
+	engine := NewEngine(recurringTestTracer)
 	storage := &mockStorage{jobs: make(map[string]*Job)}
 	engine.Storage = storage
 

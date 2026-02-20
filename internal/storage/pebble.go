@@ -6,23 +6,22 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	go_trace "go.opentelemetry.io/otel/trace"
 )
 
-var tracer = otel.Tracer("storage-pebble")
-
 type Store struct {
-	db *pebble.DB
+	db     *pebble.DB
+	Tracer trace.Tracer
 }
 
-func NewStore(dir string) (*Store, error) {
+func NewStore(dir string, t trace.Tracer) (*Store, error) {
 	db, err := pebble.Open(dir, &pebble.Options{})
 	if err != nil {
 		return nil, err
 	}
-	return &Store{db: db}, nil
+	return &Store{db: db, Tracer: t}, nil
 }
 
 func (s *Store) SaveJob(j *scheduler.Job) error {
@@ -30,7 +29,7 @@ func (s *Store) SaveJob(j *scheduler.Job) error {
 }
 
 func (s *Store) SaveJobWithContext(ctx context.Context, j *scheduler.Job) error {
-	_, span := tracer.Start(ctx, "SaveJob", go_trace.WithAttributes(
+	_, span := s.Tracer.Start(ctx, "SaveJob", go_trace.WithAttributes(
 		attribute.String("job_id", j.ID),
 	))
 	defer span.End()
@@ -81,7 +80,7 @@ func (s *Store) DeleteJob(id string) error {
 }
 
 func (s *Store) DeleteJobWithContext(ctx context.Context, id string) error {
-	_, span := tracer.Start(ctx, "DeleteJob", go_trace.WithAttributes(
+	_, span := s.Tracer.Start(ctx, "DeleteJob", go_trace.WithAttributes(
 		attribute.String("job_id", id),
 	))
 	defer span.End()

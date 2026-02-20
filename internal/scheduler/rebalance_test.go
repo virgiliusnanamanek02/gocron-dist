@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/vnmchuo/gocron-dist/internal/hash"
+	"go.opentelemetry.io/otel/trace/noop"
 )
+
+var rebalanceTestTracer = noop.NewTracerProvider().Tracer("test")
 
 type mockForwarder struct {
 	mu           sync.Mutex
@@ -24,7 +27,7 @@ func (f *mockForwarder) ForwardJob(ctx context.Context, j *Job) error {
 
 func TestRebalance_ForwardsMisownedJobs(t *testing.T) {
 	// Setup
-	engine := NewEngine()
+	engine := NewEngine(rebalanceTestTracer)
 	engine.NodeName = "node-1"
 	ring := hash.NewConsistent()
 	ring.AddNode("node-1")
@@ -89,7 +92,7 @@ func TestRebalance_OnNodeLeave_Simulated(t *testing.T) {
 	// Node-2 leaves.
 	// Now the job might be owned by Node-3 (or Node-1).
 	
-	engine1 := NewEngine()
+	engine1 := NewEngine(rebalanceTestTracer)
 	engine1.NodeName = "node-1"
 	ring := hash.NewConsistent()
 	ring.AddNode("node-1")

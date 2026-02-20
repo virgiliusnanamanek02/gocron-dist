@@ -6,7 +6,10 @@ import (
 	"time"
 
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
+	"go.opentelemetry.io/otel/trace/noop"
 )
+
+var testTracer = noop.NewTracerProvider().Tracer("test")
 
 type MockStore struct {
 	jobs map[string]*scheduler.Job
@@ -53,7 +56,7 @@ func (m *MockStore) Close() error {
 }
 
 func TestEngine_AddJob(t *testing.T) {
-	engine := scheduler.NewEngine()
+	engine := scheduler.NewEngine(testTracer)
 	engine.Storage = NewMockStore()
 
 	job := &scheduler.Job{
@@ -72,7 +75,7 @@ func TestEngine_AddJob(t *testing.T) {
 }
 
 func TestEngine_Run(t *testing.T) {
-	engine := scheduler.NewEngine()
+	engine := scheduler.NewEngine(testTracer)
 	// No storage needed for in-memory execution test if we don't care about persistence here
 	// But let's add it to avoid nil pointer if code checks it
 	engine.Storage = NewMockStore()
