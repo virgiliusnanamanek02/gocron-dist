@@ -40,16 +40,18 @@ func main() {
 	}
 	defer telemetry.ShutdownTracer(context.Background(), tp)
 
+	tracer := tp.Tracer("gocron-dist")
+
 	// 2. Initialize Consistent Hashing
 	ring := hash.NewConsistent()
 	ring.AddNode(*nodeName) // Add self to the ring
 
 	dbDir := fmt.Sprintf("data_%s", *nodeName)
-	store, _ := storage.NewStore(dbDir)
+	store, _ := storage.NewStore(dbDir, tracer)
 	defer store.Close()
 
 	// 3. Initialize Scheduler Engine
-	engine := scheduler.NewEngine()
+	engine := scheduler.NewEngine(tracer)
 	engine.Storage = store
 	engine.NodeName = *nodeName
 	engine.Ring = ring
@@ -89,6 +91,7 @@ func main() {
 		Ring:     ring,
 		NodeName: *nodeName,
 		Cluster:  c,
+		Tracer:   tracer,
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
@@ -146,4 +149,7 @@ func main() {
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
 	fmt.Println("Shutting down node...")
+	cancel() // Cancel context for engine and cluster
+	// Wait a moment for any pending operations
+	time.Sleep(500 * time.Millisecond)
 }
