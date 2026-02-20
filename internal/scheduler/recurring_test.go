@@ -175,19 +175,19 @@ func TestRecurringJob_NextRunUpdate(t *testing.T) {
 	go engine.Run(ctx)
 
 	// Wait for first execution (~100ms) and re-enqueue.
-	// We'll poll for the queue to have the job re-enqueued.
+	// We'll poll for the job to have been executed at least once.
 	var nextRun time.Time
 	success := false
 	for i := 0; i < 20; i++ {
 		engine.mu.Lock()
-		if engine.queue.Len() == 1 {
+		if engine.queue.Len() == 1 && engine.queue[0].RunCount > 0 {
 			nextRun = engine.queue[0].NextRun
 			success = true
 			engine.mu.Unlock()
 			break
 		}
 		engine.mu.Unlock()
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	if !success {
