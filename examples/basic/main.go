@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 func main() {
-	// 1. Initialize the Scheduler Engine
-	engine := scheduler.NewEngine()
+	// 1. Initialize the Scheduler Engine with a no-op tracer
+	engine := scheduler.NewEngine(noop.NewTracerProvider().Tracer("noop"))
 
 	// 2. Start the Engine in a goroutine
 	ctx, cancel := context.WithCancel(context.Background())
