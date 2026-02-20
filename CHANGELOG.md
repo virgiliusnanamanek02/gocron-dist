@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-21
+
+### Added
+- **OTLP Exporter Support**: Added support for exporting traces to OTLP collectors (e.g., Jaeger, Tempo) via gRPC using environment variables (`OTEL_EXPORTER_TYPE=otlp`).
+- **Rebalance Resilience**: Implemented local re-queue fallback in the scheduler engine if job forwarding to a new owner fails during cluster rebalancing.
+
+### Changed
+- **Decoupled Telemetry**: Refactored OpenTelemetry instrumentation from global singletons to struct-injected tracers, improving testability and allowing multiple tracer configurations.
+- **Improved gRPC Handlers**: Added a 5-second timeout and proper context propagation for inter-node job forwarding.
+- **Test Infrastructure**: Updated all unit and integration tests to use no-op tracers, preventing side effects during test execution.
+
 ## [0.2.0] - 2026-02-20
 
 ### Added
