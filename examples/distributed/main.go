@@ -11,6 +11,7 @@ import (
 	"github.com/vnmchuo/gocron-dist/internal/hash"
 	"github.com/vnmchuo/gocron-dist/internal/scheduler"
 	"github.com/vnmchuo/gocron-dist/pkg/api"
+	"go.opentelemetry.io/otel/trace/noop"
 	"google.golang.org/grpc"
 )
 
@@ -23,10 +24,12 @@ func main() {
 
 	fmt.Printf("Starting Distributed Node: %s\n", nodeName)
 
+	tracer := noop.NewTracerProvider().Tracer("noop")
+
 	// 1. Ring & Engine
 	ring := hash.NewConsistent()
 	ring.AddNode(nodeName)
-	engine := scheduler.NewEngine()
+	engine := scheduler.NewEngine(tracer)
 
 	// 2. Cluster Setup
 	c, err := cluster.NewCluster(nodeName, gossipPort, grpcPort, "", 
@@ -50,6 +53,7 @@ func main() {
 		Ring:     ring,
 		NodeName: nodeName,
 		Cluster:  c,
+		Tracer:   tracer,
 	})
 
 	go grpcServer.Serve(lis)
